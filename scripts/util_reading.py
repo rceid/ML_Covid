@@ -27,18 +27,22 @@ countries_names = {'Czech republic': 'Czech Republic', 'Czechia':
     'Saint Vincent and the Grenadines', 'Venezuela, RB': 'Venezuela',
     'Yemen, Rep.' : 'Yemen'}
 
-data_dir = "project/data/"
+data_dir = "../data/"
 jhu_data_url = "https://raw.githubusercontent.com/datasets/covid-19/master/data\
 /time-series-19-covid-combined.csv"
+jhu_data_offline = data_dir + "time-series-19-covid-combined.csv"
 acaps_filepath = data_dir + 'acaps_data.xlsx'
 
 
 def read_jhu_data(url):
     '''
-    Reads Jhon Hopkins cross country data, converts dates to datetime and
+    Reads John Hopkins cross country data, converts dates to datetime and
     returns a pandas dataframe
     '''
-    jhu_df = pd.read_csv(jhu_data_url)
+    try:
+        jhu_df = pd.read_csv(jhu_data_url)
+    except:
+        jhu_df = pd.read_csv(jhu_data_offline)
     jhu_df['Date'] = pd.to_datetime(jhu_df['Date'], infer_datetime_format=True)
     jhu_df['Date'] = jhu_df['Date'].dt.date
     jhu_df.rename(columns={'Country/Region': 'Country'}, inplace=True)
@@ -110,7 +114,7 @@ def read_wb_data(data_dir):
     wb_data.rename(columns={'2019': 'Hospital Beds/1k', 'Country Name':\
                             'Country', '2018': 'Share Pop 65+'}, inplace=True)
     return wb_data
-
+#%%
 
 def main():
     df1 = read_jhu_data(jhu_data_url)
