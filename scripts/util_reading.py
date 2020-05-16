@@ -32,6 +32,7 @@ jhu_data_url = "https://raw.githubusercontent.com/datasets/covid-19/master/data\
 /time-series-19-covid-combined.csv"
 jhu_data_offline = data_dir + "time-series-19-covid-combined.csv"
 acaps_filepath = data_dir + 'acaps_data.xlsx'
+OXFORD_URL = "https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest.csv"
 
 
 def read_jhu_data(url):
@@ -77,6 +78,35 @@ def read_acaps_data(file_path):
 
     return acaps_df
 
+def read_and_clean_oxford_data():
+    '''
+    Reads Oxford data from git url
+
+    Parameters
+    ----------
+    url : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    oxford_policy = pd.read_csv(OXFORD_URL)
+    cols_to_keep = [col for col in list(oxford_policy.columns) if\
+                    'Flag' not in col]
+    oxford_policy = oxford_policy[cols_to_keep]
+    oxford_policy['Date'] = pd.to_datetime(oxford_policy['Date'].astype(str),\
+                                           format='%Y%m%d')
+    oxford_policy['Date'] = pd.to_datetime(oxford_policy['Date'],\
+                                           infer_datetime_format=True)
+    oxford_policy['Date'] = oxford_policy['Date'].dt.date
+    oxford_policy.rename(columns={'CountryName': 'Country'}, inplace=True)
+    oxford_policy['Country'] = oxford_policy['Country'].replace(renaming)
+    return oxford_policy
+
+def merge_oxford_jhu(oxford_df, jhu_df):
+    return pd.merge(oxford_df, jhu_df, on=['Country', 'Date'], how='left')
 
 def merge_dfs_jhu_acap(df1, df2):
     '''
