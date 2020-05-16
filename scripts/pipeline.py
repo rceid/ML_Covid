@@ -102,7 +102,7 @@ def read_and_clean_oxford_data():
                                            infer_datetime_format=True)
     oxford_policy['Date'] = oxford_policy['Date'].dt.date
     oxford_policy.rename(columns={'CountryName': 'Country'}, inplace=True)
-    oxford_policy['Country'] = oxford_policy['Country'].replace(renaming)
+    oxford_policy['Country'] = oxford_policy['Country'].replace(countries_names)
     return oxford_policy
 
 def merge_oxford_jhu(oxford_df, jhu_df):
