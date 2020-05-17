@@ -194,7 +194,20 @@ def create_clean_df():
     ## <<FIX MEEEEEEEEEEEWEEEEEEEEE>>
     # this needs a bit more thinking
     df2 = df2.drop_duplicates(['Country Code', 'Date'])
+
     m_df = pd.merge(df1, df2, how='left', left_on=['Country Code','Date'], right_on = ['Country Code', 'Date'])
     df_wb = read_wb_data(data_dir)
     m_df = pd.merge(m_df, df_wb, on = ['Country Code'])
+
+    ## some cleaning on the m_df
+    m_df.drop(columns =['Country_x', 'Country_y'], inplace=True)
+    m_df['acaps_measure'] = pd.notnull(m_df['CATEGORY']).astype(int)
+
+    #adding dummies for acaps 'CATEGORY' var
+    m_df = m_df.join(pd.get_dummies(m_df['CATEGORY'], prefix= "acaps_cat_"))
+
+    ## making days since first case
+    first_case = m_df[m_df['Confirmed'] > 0.0].groupby('Country').agg({'Confirmed': 'cumcount'})
+    first_case.rename(columns = {'Confirmed': 'days_since_first_case'}, inplace=True)
+    m_df = m_df.join(first_case)
     return m_df
