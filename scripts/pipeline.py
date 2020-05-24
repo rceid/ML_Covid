@@ -135,12 +135,12 @@ def read_wb_data(data_dir):
     Reads and returns world bank data
     '''
     pop_old = pd.read_excel(data_dir+'popabove65.xls', sheet_name='Data',\
-                            header=3, usecols = ["Country Name", "2018"])
+                            header=3, usecols = ["Country Name", "Country Code", "2018"])
     hbeds = pd.read_excel(data_dir+'hospbeds.xls', sheet_name='Data',\
                           header=3)
     yrs = hbeds[hbeds.columns[4:]]
     yrs = yrs.ffill(axis=1)['2019']
-    wb_data = pd.concat([hbeds['Country Name'], yrs, pop_old['2018']], axis=1)
+    wb_data = pd.concat([hbeds['Country Name'], yrs, pop_old[['Country Code', '2018']]], axis=1)
     wb_data.rename(columns={'2019': 'Hospital Beds/1k', 'Country Name':\
                             'Country', '2018': 'Share Pop 65+'}, inplace=True)
     return wb_data
@@ -153,3 +153,61 @@ def main():
     df_wb = read_wb_data(data_dir)
     merged_df = pd.merge(merged_df, df_wb, how='inner', on='Country')
     return merged_df
+
+
+## Country Names are not consistent  in any dataset
+## World Bank Provides country codes so using it to make consistent
+
+renaming_jhu_names = {'Bahamas': 'The Bahamas',
+                        'Burma': 'Myanmar',
+                        'Congo (Brazzaville)' : 'Congo',
+                        'Congo (Kinshasa)':'Dem. Rep. Congo',
+                         'Gambia': 'The Gambia',
+                         'Korea, South':'Korea',
+                         'North Macedonia':'Macedonia',
+                         'Syria':'Syrian Arab Republic',
+                         'US':'United States'}
+
+def jhu_with_country_code():
+    '''
+    This function will take the JHU df and will add country codes as per WB
+    '''
+
+    df = read_jhu_data(jhu_data_url)
+    df['Country'] = df['Country'].replace(renaming_jhu_names)
+    wb_codes = pd.read_csv("../data/WB_Country_Codes.csv")[['Country Code', 'Short Name']]
+    wb_codes.rename(columns = {'Short Name':'Country'}, inplace = True)
+    result = pd.merge(df, wb_codes, on='Country', how='inner')
+    # only a few small countries do not match with World Bank list, it's best to drop them
+    # at this stage
+    return result
+
+def create_clean_df():
+    df1 = jhu_with_country_code()
+    #making df1 at country-date level
+    df1 = df1.groupby(['Country','Country Code', 'Date']).agg({'Recovered':'sum', 
+                                                            'Confirmed': 'sum', 
+                                                            'Deaths':'sum'}).reset_index()
+    df2 = read_acaps_data(acaps_filepath)
+    df2.rename(columns = {'ISO':'Country Code','DATE_IMPLEMENTED': 'Date'}, inplace=True)
+    ## Makidn acaps data also at a day level
+    ## <<FIX MEEEEEEEEEEEWEEEEEEEEE>>
+    # this needs a bit more thinking
+    df2 = df2.drop_duplicates(['Country Code', 'Date'])
+
+    m_df = pd.merge(df1, df2, how='left', left_on=['Country Code','Date'], right_on = ['Country Code', 'Date'])
+    df_wb = read_wb_data(data_dir)
+    m_df = pd.merge(m_df, df_wb, on = ['Country Code'])
+
+    ## some cleaning on the m_df
+    m_df.drop(columns =['Country_x', 'Country_y'], inplace=True)
+    m_df['acaps_measure'] = pd.notnull(m_df['CATEGORY']).astype(int)
+
+    #adding dummies for acaps 'CATEGORY' var
+    m_df = m_df.join(pd.get_dummies(m_df['CATEGORY'], prefix= "acaps_cat_"))
+
+    ## making days since first case
+    first_case = m_df[m_df['Confirmed'] > 0.0].groupby('Country').agg({'Confirmed': 'cumcount'})
+    first_case.rename(columns = {'Confirmed': 'days_since_first_case'}, inplace=True)
+    m_df = m_df.join(first_case)
+    return m_df
