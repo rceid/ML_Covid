@@ -8,9 +8,57 @@ Created on Wed May  6 16:55:31 2020
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error
 import datetime
-from  sklearn.metrics import f1_score
+
+
+def metrics(target_predict,test_targets, train_features, train_targets,
+            model, output=True):
+
+    bias = mean_squared_error(model.predict(train_features),train_targets)
+    mse = mean_squared_error(target_predict,test_targets)
+    rss = np.sum((target_predict - test_targets) ** 2)
+    variance = model.score(train_features, train_targets)
+
+    if output:
+        print("Bias: %.2f" % bias)
+        print("Mean squared error: %.2f" % mse)
+        print("RSS: %.2f" % rss)
+        print('Variance score: %.2f\n' % variance)
+
+    return(bias,mse,rss,variance)
+
+
+def get_most_relevant_features(df, model, number_of_features):
+    '''
+
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    features = pd.DataFrame(columns=['Feature', 'Coefficient', 'abs'])
+    features = features.append({'Feature': 'Intercept', 'Coefficient':
+                               model.intercept_, 'abs': abs(model.intercept_)}
+                               , ignore_index=True)
+    for i in range(len(df.columns)):
+        features = features.append({'Feature': df.columns[i],
+                                    'Coefficient': model.coef_[i],
+                                    'abs': abs(model.coef_[i])},
+                                    ignore_index=True)
+
+    features = features.sort_values(by=['abs'], ascending=False)
+    features = features.drop(['abs'], axis=1)
+    return features[:number_of_features]
+
 
 def read_and_process_data(filepath):
     '''
