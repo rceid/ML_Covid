@@ -10,6 +10,27 @@ import numpy as np
 from sklearn import preprocessing
 import datetime
 
+
+def process_data():
+    '''
+
+
+    Returns
+    -------
+    None.
+
+    '''
+    df_train, df_test = read_split_and_scale()
+    df_train['Country'].astype('category')
+    df_test['Country'].astype('category')
+    df_train = df_train.drop(['Date'], axis=1)
+    df_test = df_test.drop(['Date'], axis=1)
+    df_train = pd.get_dummies(df_train)
+    df_test = pd.get_dummies(df_test)
+    df_train = remove_countries_not_in_test_set(df_train, df_test)
+    return df_train, df_test
+
+
 def read_split_and_scale():
     '''
 
@@ -25,7 +46,13 @@ def read_split_and_scale():
     scalable_train, non_scalable_train = split_scalable_columns(df_training)
     scalable_test, non_scalable_test = split_scalable_columns(df_test)
     scaled_train, scaled_test = scale_df(scalable_train, scalable_test)
-    return scaled_train, scaled_test
+    '''
+    df_train = scaled_train.join(non_scalable_train)
+    df_test = scaled_test.join(non_scalable_test)
+    '''
+    df_train = pd.concat([scaled_train, non_scalable_train], axis=1)
+    df_test = pd.concat([scaled_test, non_scalable_test], axis=1)
+    return df_train, df_test
 
 def split_scalable_columns(df):
     '''
@@ -105,11 +132,30 @@ def sanity_check(train_df, test_df):
     # Check that they have the same features
     if (train_df.columns == test_df.columns).all():
         print("Success: Features match")
-
+    '''
     # Check that no NAs remain
     if  not train_df.isna().sum().astype(bool).any() and \
         not test_df.isna().sum().astype(bool).any():
         print("Success: No NAs remain")
+    '''
+
+def remove_countries_not_in_test_set(df_train, df_test):
+    '''
+    Removes variables not present in test set
+
+    Parameters
+    ----------
+    train_df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    extra_countries = [col for col in df_train.columns if col not in df_test.columns]
+    df_train = df_train.drop(extra_countries, axis=1)
+    return df_train
 
 
 #%%
