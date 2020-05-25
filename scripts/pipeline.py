@@ -7,7 +7,117 @@ Created on Wed May  6 16:55:31 2020
 
 import pandas as pd
 import numpy as np
+from sklearn import preprocessing
+import datetime
 
+def read_split_and_scale():
+    '''
+
+
+    Returns
+    -------
+    None.
+
+    '''
+    df = pd.read_pickle('../data/covid_df.pkl')
+    split_date = datetime.date(2020, 5, 1)
+    df_training, df_test = split_train_test_on_date(df, split_date)
+    scalable_train, non_scalable_train = split_scalable_columns(df_training)
+    scalable_test, non_scalable_test = split_scalable_columns(df_test)
+    scaled_train, scaled_test = scale_df(scalable_train, scalable_test)
+    return scaled_train, scaled_test
+
+def split_scalable_columns(df):
+    '''
+    Splits df into scalable columns and non-scalable columns
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    scalable_vars : TYPE
+        DESCRIPTION.
+    non_scalable_vars : TYPE
+        DESCRIPTION.
+
+    '''
+    non_scalable_vars = df[['Country', 'Date', 'Day Count',\
+                            'Days Elapsed Since First Case']]
+    lst = []
+    for column in df.columns:
+        if column not in non_scalable_vars.columns:
+            lst.append(column)
+    scalable_vars = df[lst]
+    return scalable_vars, non_scalable_vars
+
+
+def split_train_test_on_date(df, split_date):
+    '''
+
+
+    Parameters
+    ----------
+    split_date : Datetime date.
+
+    Returns
+    -------
+    train_df, test_df.
+
+    '''
+    split_date = datetime.date(2020, 5, 1)
+    df_training = df.loc[df['Date'] <= split_date]
+    df_test = df.loc[df['Date'] > split_date]
+    return df_training, df_test
+
+
+
+def scale_df(scalable_train, scalable_test):
+    '''
+    Scales df, assumes all columns are scalable
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    scaler = preprocessing.StandardScaler().fit(scalable_train)
+    scaled_train = pd.DataFrame(scaler.transform(scalable_train),\
+                                columns=scalable_train.columns.values)
+    scaled_test = pd.DataFrame(scaler.transform(scalable_test),\
+                               columns=scalable_test.columns)
+    return scaled_train, scaled_test
+
+
+def sanity_check(train_df, test_df):
+
+    # Sort features alphabetically
+    train_df = train_df.reindex(sorted(train_df.columns), axis=1)
+    test_df = test_df.reindex(sorted(test_df.columns), axis=1)
+
+    # Check that they have the same features
+    if (train_df.columns == test_df.columns).all():
+        print("Success: Features match")
+
+    # Check that no NAs remain
+    if  not train_df.isna().sum().astype(bool).any() and \
+        not test_df.isna().sum().astype(bool).any():
+        print("Success: No NAs remain")
+
+
+#%%
+###
+###
+### READING AND MERGING FUNCTIONS
+###
+###
 
 countries_names = {'Czech republic': 'Czech Republic', 'Czechia':
     'Czech Republic', 'Myanmar': 'Burma', 'West Bank and Gaza': 'Palestine',
@@ -185,8 +295,8 @@ def jhu_with_country_code():
 def create_clean_df():
     df1 = jhu_with_country_code()
     #making df1 at country-date level
-    df1 = df1.groupby(['Country','Country Code', 'Date']).agg({'Recovered':'sum', 
-                                                            'Confirmed': 'sum', 
+    df1 = df1.groupby(['Country','Country Code', 'Date']).agg({'Recovered':'sum',
+                                                            'Confirmed': 'sum',
                                                             'Deaths':'sum'}).reset_index()
     df2 = read_acaps_data(acaps_filepath)
     df2.rename(columns = {'ISO':'Country Code','DATE_IMPLEMENTED': 'Date'}, inplace=True)
