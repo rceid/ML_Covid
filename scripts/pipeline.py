@@ -8,10 +8,11 @@ Created on Wed May  6 16:55:31 2020
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
+from sklearn.metrics import accuracy_score
 import datetime
+from  sklearn.metrics import f1_score
 
-
-def process_data():
+def read_and_process_data(filepath):
     '''
 
 
@@ -20,7 +21,7 @@ def process_data():
     None.
 
     '''
-    df_train, df_test = read_split_and_scale()
+    df_train, df_test = read_split_and_scale(filepath)
     df_train['Country'].astype('category')
     df_test['Country'].astype('category')
     df_train = df_train.drop(['Date'], axis=1)
@@ -31,7 +32,7 @@ def process_data():
     return df_train, df_test
 
 
-def read_split_and_scale():
+def read_split_and_scale(filepath):
     '''
 
 
@@ -40,7 +41,7 @@ def read_split_and_scale():
     None.
 
     '''
-    df = pd.read_pickle('../data/covid_df.pkl')
+    df = pd.read_pickle(filepath)
     split_date = datetime.date(2020, 5, 1)
     df_training, df_test = split_train_test_on_date(df, split_date)
     scalable_train, non_scalable_train = split_scalable_columns(df_training)
@@ -53,6 +54,7 @@ def read_split_and_scale():
     df_train = pd.concat([scaled_train, non_scalable_train], axis=1)
     df_test = pd.concat([scaled_test, non_scalable_test], axis=1)
     return df_train, df_test
+
 
 def split_scalable_columns(df):
     '''
@@ -71,7 +73,7 @@ def split_scalable_columns(df):
         DESCRIPTION.
 
     '''
-    non_scalable_vars = df[['Country', 'Date', 'Day Count',\
+    non_scalable_vars = df[['Country', 'Date', 'Day Count',
                             'Days Elapsed Since First Case']]
     lst = []
     for column in df.columns:
@@ -100,7 +102,6 @@ def split_train_test_on_date(df, split_date):
     return df_training, df_test
 
 
-
 def scale_df(scalable_train, scalable_test):
     '''
     Scales df, assumes all columns are scalable
@@ -116,9 +117,9 @@ def scale_df(scalable_train, scalable_test):
 
     '''
     scaler = preprocessing.StandardScaler().fit(scalable_train)
-    scaled_train = pd.DataFrame(scaler.transform(scalable_train),\
+    scaled_train = pd.DataFrame(scaler.transform(scalable_train),
                                 columns=scalable_train.columns.values)
-    scaled_test = pd.DataFrame(scaler.transform(scalable_test),\
+    scaled_test = pd.DataFrame(scaler.transform(scalable_test),
                                columns=scalable_test.columns)
     return scaled_train, scaled_test
 
@@ -139,6 +140,7 @@ def sanity_check(train_df, test_df):
         print("Success: No NAs remain")
     '''
 
+
 def remove_countries_not_in_test_set(df_train, df_test):
     '''
     Removes variables not present in test set
@@ -153,9 +155,85 @@ def remove_countries_not_in_test_set(df_train, df_test):
     None.
 
     '''
-    extra_countries = [col for col in df_train.columns if col not in df_test.columns]
+    extra_countries = [col for col in df_train.columns if col not in
+                       df_test.columns]
     df_train = df_train.drop(extra_countries, axis=1)
     return df_train
+
+
+def divide_target_and_features(df, target):
+    '''
+
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+    target : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    y = df[target]
+    x = df.drop([target], axis=1)
+    return x, y
+
+
+def train_and_evaluate(X_train, X_test, y_train, y_test, models, grid):
+    '''
+
+
+    Parameters
+    ----------
+    X_train : TYPE
+        DESCRIPTION.
+    X_test : TYPE
+        DESCRIPTION.
+    y_train : TYPE
+        DESCRIPTION.
+    y_test : TYPE
+        DESCRIPTION.
+    models : TYPE
+        DESCRIPTION.
+    grid : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    results_df : TYPE
+        DESCRIPTION.
+
+    '''
+    results_df = pd.DataFrame({"Model": [], "Params": [], "R2 Score": []})
+    counter = 0
+    # Loop over models
+    for model_key in models.keys():
+
+        # Loop over parameters
+        for params in grid[model_key]:
+            print("Training model:", model_key, "|", params)
+
+            # Create model
+            model = models[model_key]
+            model.set_params(**params)
+            # Fit model on training set
+            model = model.fit(X_train, y_train)
+
+            # Predict on testing set
+            y_predicted = model.predict(X_test)
+
+            # Evaluate predictions
+            accuracy_s, f1 = r2_score(y_test, y_predicted)
+
+            # Store results in your results data frame
+            results_df.loc[counter] = \
+                [model_key, params, accuracy_s, f1]
+            counter += 1
+
+    return results_df
 
 
 #%%
