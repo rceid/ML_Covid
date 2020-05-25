@@ -12,11 +12,11 @@ from sklearn.metrics import mean_squared_error
 import datetime
 
 
-def metrics(target_predict,test_targets, train_features, train_targets,
+def metrics(target_predict, test_targets, train_features, train_targets,
             model, output=True):
 
-    bias = mean_squared_error(model.predict(train_features),train_targets)
-    mse = mean_squared_error(target_predict,test_targets)
+    bias = mean_squared_error(model.predict(train_features), train_targets)
+    mse = mean_squared_error(target_predict, test_targets)
     rss = np.sum((target_predict - test_targets) ** 2)
     variance = model.score(train_features, train_targets)
 
@@ -26,7 +26,7 @@ def metrics(target_predict,test_targets, train_features, train_targets,
         print("RSS: %.2f" % rss)
         print('Variance score: %.2f\n' % variance)
 
-    return(bias,mse,rss,variance)
+    return(bias, mse, rss, variance)
 
 
 def get_most_relevant_features(df, model, number_of_features):
@@ -47,8 +47,8 @@ def get_most_relevant_features(df, model, number_of_features):
     '''
     features = pd.DataFrame(columns=['Feature', 'Coefficient', 'abs'])
     features = features.append({'Feature': 'Intercept', 'Coefficient':
-                               model.intercept_, 'abs': abs(model.intercept_)}
-                               , ignore_index=True)
+                               model.intercept_, 'abs': abs(model.intercept_)},
+                               ignore_index=True)
     for i in range(len(df.columns)):
         features = features.append({'Feature': df.columns[i],
                                     'Coefficient': model.coef_[i],
@@ -82,11 +82,14 @@ def read_and_process_data(filepath):
 
 def read_split_and_scale(filepath):
     '''
-
+    Reads dataframe from filepath, splits data on training/testing data, scales
+    it, merges scalable and non scalable columns, and returns both training and
+    testinf dataframes. At first, since the scaling process forms a new
+    dataframe, we create an index column so we can merge back afterwards.
 
     Returns
     -------
-    None.
+    df_train, df_test.
 
     '''
     df = pd.read_pickle(filepath)
@@ -95,12 +98,18 @@ def read_split_and_scale(filepath):
     scalable_train, non_scalable_train = split_scalable_columns(df_training)
     scalable_test, non_scalable_test = split_scalable_columns(df_test)
     scaled_train, scaled_test = scale_df(scalable_train, scalable_test)
-    '''
+
+    scaled_train = scaled_train.reset_index()
+    scaled_train = scaled_train.drop(['index'], axis=1)
+    non_scalable_train = non_scalable_train.reset_index()
+    non_scalable_train = non_scalable_train.drop(['index'], axis=1)
+    scaled_test = scaled_test.reset_index()
+    scaled_test = scaled_test.drop(['index'], axis=1)
+    non_scalable_test = non_scalable_test.reset_index()
+    non_scalable_test = non_scalable_test.drop(['index'], axis=1)
     df_train = scaled_train.join(non_scalable_train)
     df_test = scaled_test.join(non_scalable_test)
-    '''
-    df_train = pd.concat([scaled_train, non_scalable_train], axis=1)
-    df_test = pd.concat([scaled_test, non_scalable_test], axis=1)
+
     return df_train, df_test
 
 
@@ -122,8 +131,9 @@ def split_scalable_columns(df):
 
     '''
     non_scalable_vars = df[['Country', 'Date', 'Day Count',
-                            'Days Elapsed Since First Case']]
+                            'Days Elapsed Since First Case']]  # , 'index']]
     lst = []
+    # lst.append('index')
     for column in df.columns:
         if column not in non_scalable_vars.columns:
             lst.append(column)
@@ -163,12 +173,21 @@ def scale_df(scalable_train, scalable_test):
     -------
     None.
 
+    ''' '''
+    train_index = scalable_train['index']
+    scalable_train = scalable_train.drop(['index'], axis=1)
+    test_index = scalable_test['index']
+    scalable_test = scalable_test.drop(['index'], axis=1)
     '''
     scaler = preprocessing.StandardScaler().fit(scalable_train)
     scaled_train = pd.DataFrame(scaler.transform(scalable_train),
                                 columns=scalable_train.columns.values)
     scaled_test = pd.DataFrame(scaler.transform(scalable_test),
                                columns=scalable_test.columns)
+    '''
+    scaled_train['index'] = train_index.astype(int)
+    scaled_test['index'] = test_index.astype(int)
+    '''
     return scaled_train, scaled_test
 
 
@@ -181,13 +200,15 @@ def sanity_check(train_df, test_df):
     # Check that they have the same features
     if (train_df.columns == test_df.columns).all():
         print("Success: Features match")
-    '''
+    else:
+        print("Data not clean yet, one or more features do not match")
+
     # Check that no NAs remain
-    if  not train_df.isna().sum().astype(bool).any() and \
+    if  not train_df.isna().sum().astype(bool).any() and\
         not test_df.isna().sum().astype(bool).any():
         print("Success: No NAs remain")
-    '''
-
+    else:
+        print("Failure: Data is not clean yet, NAs remaining")
 
 def remove_countries_not_in_test_set(df_train, df_test):
     '''
