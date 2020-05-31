@@ -5,3 +5,12 @@ scripts/.ipynb_checkpoints/data_exploration-checkpoint.ipynb
 scripts/.ipynb_checkpoints/covid dataset-checkpoint.ipynb
 scripts/__pycache__/pipeline.cpython-38.pyc
 scripts/.ipynb_checkpoints/data_exploration-checkpoint.ipynb
+scripts/Untitled.ipynb
+*.pyc
+scripts/sir_calibrate.py
+scripts/sir_model.py
+scripts/.ipynb_checkpoints/model_fitting_PT-checkpoint.ipynb
+scripts/.ipynb_checkpoints/Untitled-checkpoint.ipynb
+scripts/__pycache__/pipeline.cpython-38.pyc
+scripts/data_exploration.ipynb
+scripts/data_exploration.ipynb
