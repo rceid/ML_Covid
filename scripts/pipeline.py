@@ -149,8 +149,8 @@ def split_and_scale_on_last_weeks(df, n_weeks_prediction):
     df_train = scaled_train.join(non_scalable_train)
     df_test = scaled_test.join(non_scalable_test)
 
-    df_train['Country'].astype('category')
-    df_test['Country'].astype('category')
+    df_train = make_category_types(df_train)
+    df_test = make_category_types(df_test)
     df_train = df_train.drop(['Date'], axis=1)
     df_test = df_test.drop(['Date'], axis=1)
     df_train = pd.get_dummies(df_train)
@@ -158,6 +158,20 @@ def split_and_scale_on_last_weeks(df, n_weeks_prediction):
     df_train = remove_countries_not_in_test_set(df_train, df_test)
 
     return df_train, df_test
+
+
+def make_category_types(df):
+    X_vars_to_hot_code = ['Country', 'C1_School closing', 'C2_Workplace closing',
+       'C3_Cancel public events', 'C4_Restrictions on gatherings',
+       'C5_Close public transport', 'C6_Stay at home requirements',
+       'C7_Restrictions on internal movement',
+       'C8_International travel controls', 'E1_Income support',
+       'E2_Debt/contract relief', 'H1_Public information campaigns',
+       'H2_Testing policy', 'H3_Contact tracing']
+
+    for var in X_vars_to_hot_code:
+        df[var] = df[var].astype('category')
+    return df
 
 
 def cut_df_on_weeks(df, n_weeks):
@@ -199,10 +213,17 @@ def split_scalable_columns(df):
         DESCRIPTION.
 
     '''
-    non_scalable_vars = df[['Country', 'Date', 'Day Count',
-                            'Days Elapsed Since First Case', 'Confirmed Cases'
-                            , 'Deaths', 'Recovered', 'Daily New Cases',
-                            'Daily Deaths']]
+
+    non_scalable = ['Country', 'C1_School closing', 'C2_Workplace closing',
+       'C3_Cancel public events', 'C4_Restrictions on gatherings',
+       'C5_Close public transport', 'C6_Stay at home requirements',
+       'C7_Restrictions on internal movement',
+       'C8_International travel controls', 'E1_Income support',
+       'E2_Debt/contract relief', 'H1_Public information campaigns',
+       'H2_Testing policy', 'H3_Contact tracing', 'Date', 'Day Count',
+       'Days Elapsed Since First Case', 'Confirmed Cases'
+       , 'Deaths', 'Recovered', 'Daily New Cases', 'Daily Deaths']
+    non_scalable_vars = df[non_scalable]
     lst = []
     for column in df.columns:
         if column not in non_scalable_vars.columns:
