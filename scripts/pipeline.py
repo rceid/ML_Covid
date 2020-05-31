@@ -13,7 +13,7 @@ import datetime
 from datetime import timedelta
 from sklearn import linear_model
 from sklearn.metrics import r2_score
-
+from  sklearn.model_selection import GridSearchCV
 
 def metrics(y_pred, y_test, x_train, y_train, model, output=True):
 
@@ -403,6 +403,42 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
 
     return ev
 
+
+def train_and_evaluate_w_grid(x_train, y_train, x_test, y_test):
+    '''
+
+
+    Parameters
+    ----------
+    x_train : TYPE
+        DESCRIPTION.
+    y_train : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    ls = GridSearchCV(linear_model.Lasso(), {'alpha':[0.1,0.2,0.3,0.4,0.5]})
+    rg = GridSearchCV(linear_model.Ridge(), {'alpha':[0.1,0.2,0.3,0.4,0.5]})
+    ev = {}
+    models = [(ls, 'Lasso'),
+              (rg, 'Ridge')]
+
+    for m in models:
+        (model, name) = m
+        model.fit(x_train, y_train)
+        #y_pred = model.predict(x_test)
+        # print('{}\n{}\n'.format(name + ': Features with highest magnitude\
+        #                         coefficients in absolute value',
+        #                         get_most_relevant_features(x_train,
+        #                                                    model, 10)))
+        ev[name] = model.cv_results_
+        #ev[name] = metrics(y_pred, y_test, x_train, y_train, model)
+        print(ev[name])
+
+    return ev
 
 #%%
 ###
