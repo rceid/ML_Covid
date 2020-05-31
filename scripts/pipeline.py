@@ -131,7 +131,8 @@ def split_scalable_columns(df):
 
     '''
     non_scalable_vars = df[['Country', 'Date', 'Day Count',
-                            'Days Elapsed Since First Case']]  # , 'index']]
+                            'Days Elapsed Since First Case', 'Confirmed Cases'\
+                                , 'Deaths', 'Recovered']]  # , 'index']]
     lst = []
     # lst.append('index')
     for column in df.columns:
