@@ -2,7 +2,7 @@
 """
 Created on Wed May  6 16:55:31 2020
 
-@author: diego
+@author: diego - piyush - raymond
 """
 
 import pandas as pd
@@ -10,21 +10,25 @@ import numpy as np
 from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 import datetime
+from datetime import timedelta
+from sklearn import linear_model
+from sklearn.metrics import r2_score
 
 
-def metrics(target_predict, test_targets, train_features, train_targets,
-            model, output=True):
+def metrics(y_pred, y_test, x_train, y_train, model, output=True):
 
-    bias = mean_squared_error(model.predict(train_features), train_targets)
-    mse = mean_squared_error(target_predict, test_targets)
-    rss = np.sum((target_predict - test_targets) ** 2)
-    variance = model.score(train_features, train_targets)
+    bias = mean_squared_error(y_train, model.predict(x_train))
+    mse = mean_squared_error(y_test, y_pred)
+    rss = np.sum((y_pred - y_test) ** 2)
+    variance = model.score(x_train, y_train)
+    r2_s = r2_score(y_test, y_pred)
 
     if output:
         print("Bias: %.2f" % bias)
         print("Mean squared error: %.2f" % mse)
         print("RSS: %.2f" % rss)
         print('Variance score: %.2f\n' % variance)
+        print('R2 score: %.2f\n' % r2_s)
 
     return(bias, mse, rss, variance)
 
@@ -69,7 +73,8 @@ def read_and_process_data(filepath):
     None.
 
     '''
-    df_train, df_test = read_split_and_scale(filepath)
+    split_date = datetime.date(2020, 5, 1)
+    df_train, df_test = read_split_and_scale(filepath, split_date)
     df_train['Country'].astype('category')
     df_test['Country'].astype('category')
     df_train = df_train.drop(['Date'], axis=1)
@@ -80,7 +85,7 @@ def read_and_process_data(filepath):
     return df_train, df_test
 
 
-def read_split_and_scale(filepath):
+def read_split_and_scale(filepath, split_date):
     '''
     Reads dataframe from filepath, splits data on training/testing data, scales
     it, merges scalable and non scalable columns, and returns both training and
@@ -93,8 +98,7 @@ def read_split_and_scale(filepath):
 
     '''
     df = pd.read_pickle(filepath)
-    split_date = datetime.date(2020, 5, 1)
-    df_training, df_test = split_train_test_on_date(df, split_date)
+    df_training, df_test = split_on_date(df, split_date)
     scalable_train, non_scalable_train = split_scalable_columns(df_training)
     scalable_test, non_scalable_test = split_scalable_columns(df_test)
     scaled_train, scaled_test = scale_df(scalable_train, scalable_test)
@@ -111,6 +115,71 @@ def read_split_and_scale(filepath):
     df_test = scaled_test.join(non_scalable_test)
 
     return df_train, df_test
+
+def split_and_scale_on_last_weeks(df, n_weeks_prediction):
+    '''
+
+
+    Parameters
+    ----------
+    filepath : TYPE
+        DESCRIPTION.
+    n_weeks : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    split_date = df['Date'].max() - timedelta(days=n_weeks_prediction*7)
+    df_training, df_test = split_on_date(df, split_date)
+    scalable_train, non_scalable_train = split_scalable_columns(df_training)
+    scalable_test, non_scalable_test = split_scalable_columns(df_test)
+    scaled_train, scaled_test = scale_df(scalable_train, scalable_test)
+
+    scaled_train = scaled_train.reset_index()
+    scaled_train = scaled_train.drop(['index'], axis=1)
+    non_scalable_train = non_scalable_train.reset_index()
+    non_scalable_train = non_scalable_train.drop(['index'], axis=1)
+    scaled_test = scaled_test.reset_index()
+    scaled_test = scaled_test.drop(['index'], axis=1)
+    non_scalable_test = non_scalable_test.reset_index()
+    non_scalable_test = non_scalable_test.drop(['index'], axis=1)
+    df_train = scaled_train.join(non_scalable_train)
+    df_test = scaled_test.join(non_scalable_test)
+
+    df_train['Country'].astype('category')
+    df_test['Country'].astype('category')
+    df_train = df_train.drop(['Date'], axis=1)
+    df_test = df_test.drop(['Date'], axis=1)
+    df_train = pd.get_dummies(df_train)
+    df_test = pd.get_dummies(df_test)
+    df_train = remove_countries_not_in_test_set(df_train, df_test)
+
+    return df_train, df_test
+
+
+def cut_df_on_weeks(df, n_weeks):
+    '''
+
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+    n_weeks : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    cut_date = df['Date'].max() - timedelta(days=n_weeks*7)
+    print("Cutting dataframe on date: " + str(cut_date))
+    df = df.loc[df['Date'] <= cut_date]
+    return df
 
 
 def split_scalable_columns(df):
@@ -131,10 +200,10 @@ def split_scalable_columns(df):
 
     '''
     non_scalable_vars = df[['Country', 'Date', 'Day Count',
-                            'Days Elapsed Since First Case', 'Confirmed Cases'\
-                                , 'Deaths', 'Recovered']]  # , 'index']]
+                            'Days Elapsed Since First Case', 'Confirmed Cases'
+                            , 'Deaths', 'Recovered', 'Daily New Cases',
+                            'Daily Deaths']]
     lst = []
-    # lst.append('index')
     for column in df.columns:
         if column not in non_scalable_vars.columns:
             lst.append(column)
@@ -142,7 +211,7 @@ def split_scalable_columns(df):
     return scalable_vars, non_scalable_vars
 
 
-def split_train_test_on_date(df, split_date):
+def split_on_date(df, split_date):
     '''
 
 
@@ -155,9 +224,9 @@ def split_train_test_on_date(df, split_date):
     train_df, test_df.
 
     '''
-    split_date = datetime.date(2020, 5, 1)
     df_training = df.loc[df['Date'] <= split_date]
     df_test = df.loc[df['Date'] > split_date]
+
     return df_training, df_test
 
 
@@ -205,11 +274,13 @@ def sanity_check(train_df, test_df):
         print("Data not clean yet, one or more features do not match")
 
     # Check that no NAs remain
-    if  not train_df.isna().sum().astype(bool).any() and\
-        not test_df.isna().sum().astype(bool).any():
+    condition_1 = not train_df.isna().sum().astype(bool).any()
+    condition_2 = not test_df.isna().sum().astype(bool).any()
+    if condition_1 and condition_2:
         print("Success: No NAs remain")
     else:
         print("Failure: Data is not clean yet, NAs remaining")
+
 
 def remove_countries_not_in_test_set(df_train, df_test):
     '''
@@ -248,62 +319,68 @@ def divide_target_and_features(df, target):
 
     '''
     y = df[target]
-    x = df.drop([target], axis=1)
+    outcome_vars = ['Confirmed Cases', 'Deaths', 'Recovered',
+                    'Daily New Cases', 'Daily Deaths']
+    x = df.drop(outcome_vars, axis=1)
     return x, y
 
 
-def train_and_evaluate(X_train, X_test, y_train, y_test, models, grid):
+def divide_target_and_one_feature(df, target):
     '''
 
 
     Parameters
     ----------
-    X_train : TYPE
+    df : TYPE
         DESCRIPTION.
-    X_test : TYPE
-        DESCRIPTION.
-    y_train : TYPE
-        DESCRIPTION.
-    y_test : TYPE
-        DESCRIPTION.
-    models : TYPE
-        DESCRIPTION.
-    grid : TYPE
+    target : TYPE
         DESCRIPTION.
 
     Returns
     -------
-    results_df : TYPE
-        DESCRIPTION.
+    None.
 
     '''
-    results_df = pd.DataFrame({"Model": [], "Params": [], "R2 Score": []})
-    counter = 0
-    # Loop over models
-    for model_key in models.keys():
+    y = df[target]
+    x = df.drop([target], axis=1)
+    return x, y
 
-        # Loop over parameters
-        for params in grid[model_key]:
-            print("Training model:", model_key, "|", params)
 
-            # Create model
-            model = models[model_key]
-            model.set_params(**params)
-            # Fit model on training set
-            model = model.fit(X_train, y_train)
+def train_and_evaluate(x_train, y_train, x_test, y_test):
+    '''
 
-            # Predict on testing set
-            y_predicted = model.predict(X_test)
 
-            # Evaluate predictions
-            accuracy_s, f1 = r2_score(y_test, y_predicted)
+    Parameters
+    ----------
+    x_train : TYPE
+        DESCRIPTION.
+    y_train : TYPE
+        DESCRIPTION.
 
-            # Store results in your results data frame
-            results_df.loc[counter] = \
-                [model_key, params, accuracy_s, f1]
-            counter += 1
+    Returns
+    -------
+    None.
 
-    return results_df
+    '''
+    ls = linear_model.Lasso(alpha=0.5)
+    rg = linear_model.Ridge(alpha=0.5)
+    lreg = linear_model.LinearRegression()
+    ev = {}
+    models = [(ls, 'Lasso'),
+              (rg, 'Ridge'),
+              (lreg, 'Linear Regression')]
+
+    for m in models:
+        (model, name) = m
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        print('{}\n{}\n'.format(name + ': Features with highest magnitude\
+                                coefficients in absolute value',
+                                get_most_relevant_features(x_train,
+                                                           model, 10)))
+        ev[name] = metrics(y_pred, y_test, x_train, y_train, model)
+
+    return ev
 
 
 #%%
