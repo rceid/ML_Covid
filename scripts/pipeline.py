@@ -30,7 +30,7 @@ def metrics(y_pred, y_test, x_train, y_train, model, output=True):
         print('Variance score: %.2f\n' % variance)
         print('R2 score: %.2f\n' % r2_s)
 
-    return(bias, mse, rss, variance)
+    return(bias, mse, rss, variance, r2_s)
 
 
 def get_most_relevant_features(df, model, number_of_features):
