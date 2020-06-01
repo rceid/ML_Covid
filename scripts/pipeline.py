@@ -14,6 +14,8 @@ from datetime import timedelta
 from sklearn import linear_model
 from sklearn.metrics import r2_score
 from  sklearn.model_selection import GridSearchCV
+import matplotlib.pyplot as plt
+
 
 def metrics(y_pred, y_test, x_train, y_train, model, output=True):
 
@@ -439,6 +441,36 @@ def train_and_evaluate_w_grid(x_train, y_train, x_test, y_test):
         print(ev[name])
 
     return ev
+
+
+def  plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
+    '''
+
+
+    Parameters
+    ----------
+    X_test : TYPE
+        DESCRIPTION.
+    y_pred : TYPE
+        DESCRIPTION.
+    y_test : TYPE
+        DESCRIPTION.
+    country_name : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+    country = 'Country_' + country_name
+    plt.plot( X_test['Day Count'][X_test[country] == 1], y_pred[X_test[country] == 1],\
+             marker='o', markerfacecolor='blue', markersize=12, color='skyblue', linewidth=4, label='Real')
+    plt.plot(X_test['Day Count'][X_test[country] == 1], y_test[X_test[country] == 1],\
+             marker='', color='olive', linewidth=2, label='Prediction')
+    plt.legend()
+
+
 
 #%%
 ###
