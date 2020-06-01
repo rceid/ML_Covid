@@ -464,9 +464,12 @@ def  plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
 
     '''
     country = 'Country_' + country_name
-    plt.plot( X_test['Day Count'][X_test[country] == 1], y_pred[X_test[country] == 1],\
+    x = X_test['Day Count'][X_test[country] == 1].apply(lambda x: timedelta(x)
+                                                        + datetime.date(2020, 1, 1))
+
+    plt.plot(x , y_pred[X_test[country] == 1],\
              marker='o', markerfacecolor='blue', markersize=12, color='skyblue', linewidth=4, label='Real')
-    plt.plot(X_test['Day Count'][X_test[country] == 1], y_test[X_test[country] == 1],\
+    plt.plot(x, y_test[X_test[country] == 1],\
              marker='', color='olive', linewidth=2, label='Prediction')
     plt.legend()
 
