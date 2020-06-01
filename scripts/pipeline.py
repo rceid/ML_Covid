@@ -474,6 +474,45 @@ def  plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
     plt.legend()
 
 
+def predictions_every_country(country_list, X_test, y_pred, y_test):
+    '''
+
+
+    Parameters
+    ----------
+    country_list : TYPE
+        DESCRIPTION.
+    X_test : TYPE
+        DESCRIPTION.
+    y_pred : TYPE
+        DESCRIPTION.
+    y_test : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    df : TYPE
+        DESCRIPTION.
+
+    '''
+    df = pd.DataFrame()
+    df_final = pd.DataFrame()
+    dates = X_test['Day Count'][X_test['Country_United States of America'] == 1].\
+        apply(lambda x: timedelta(x) + datetime.date(2020, 1, 1))
+    df['date'] = dates
+    df = df.set_index('date')
+
+    for country_var in country_list:
+        dates = X_test['Day Count'][X_test[country_var] == 1].\
+        apply(lambda x: timedelta(x) + datetime.date(2020, 1, 1))
+        df_aux = pd.DataFrame()
+        df_aux['date'] = dates
+        df_aux[country_var[8:] + ' real'] = y_test[X_test[country_var] == 1]
+        df_aux[country_var[8:] + ' prediction'] = y_pred[X_test[country_var] == 1]
+        df_aux = df_aux.set_index('date')
+        df_final = df_final.join(df_aux.copy(), how='outer')
+
+    return df_final
 
 #%%
 ###
