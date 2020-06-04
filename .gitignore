@@ -15,3 +15,10 @@ scripts/__pycache__/pipeline.cpython-38.pyc
 scripts/data_exploration.ipynb
 scripts/data_exploration.ipynb
 scripts/new_fitting_code.ipynb
+*.pyc
+scripts/.ipynb_checkpoints/covid dataset(new)-checkpoint.ipynb
+scripts/.ipynb_checkpoints/covid dataset-checkpoint.ipynb
+data/covid_df_lagged_days_2
+scripts/.ipynb_checkpoints/model fitting (plots of predictions example)-checkpoint.ipynb
+scripts/.ipynb_checkpoints/model_fitting-checkpoint.ipynb
+scripts/__pycache__/pipeline.cpython-38.pyc
