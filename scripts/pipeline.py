@@ -163,15 +163,28 @@ def split_and_scale_on_last_weeks(df, n_weeks_prediction):
 
 
 def make_category_types(df):
-    X_vars_to_hot_code = ['Country', 'C1_School closing', 'C2_Workplace closing',
-       'C3_Cancel public events', 'C4_Restrictions on gatherings',
-       'C5_Close public transport', 'C6_Stay at home requirements',
-       'C7_Restrictions on internal movement',
-       'C8_International travel controls', 'E1_Income support',
-       'E2_Debt/contract relief', 'H1_Public information campaigns',
-       'H2_Testing policy', 'H3_Contact tracing']
+    '''
+    Transforms the variables that should be one hot encoded to categorical
+    type
 
-    for var in X_vars_to_hot_code:
+    Parameters
+    ----------
+    df : Dataframe with features.
+
+    Returns
+    -------
+    df : Dataframe.
+
+    '''
+    X_vars = ['Country', 'C1_School closing', 'C2_Workplace closing',
+              'C3_Cancel public events', 'C4_Restrictions on gatherings',
+              'C5_Close public transport', 'C6_Stay at home requirements',
+              'C7_Restrictions on internal movement',
+              'C8_International travel controls', 'E1_Income support',
+              'E2_Debt/contract relief', 'H1_Public information campaigns',
+              'H2_Testing policy', 'H3_Contact tracing']
+
+    for var in X_vars:
         df[var] = df[var].astype('category')
     return df
 
@@ -217,14 +230,15 @@ def split_scalable_columns(df):
     '''
 
     non_scalable = ['Country', 'C1_School closing', 'C2_Workplace closing',
-       'C3_Cancel public events', 'C4_Restrictions on gatherings',
-       'C5_Close public transport', 'C6_Stay at home requirements',
-       'C7_Restrictions on internal movement',
-       'C8_International travel controls', 'E1_Income support',
-       'E2_Debt/contract relief', 'H1_Public information campaigns',
-       'H2_Testing policy', 'H3_Contact tracing', 'Date', 'Day Count',
-       'Days Elapsed Since First Case', 'Confirmed Cases'
-       , 'Deaths', 'Recovered', 'Daily New Cases', 'Daily Deaths']
+                    'C3_Cancel public events', 'C4_Restrictions on gatherings',
+                    'C5_Close public transport', 'C6_Stay at home requirements'
+                    , 'C7_Restrictions on internal movement',
+                    'C8_International travel controls', 'E1_Income support',
+                    'E2_Debt/contract relief', 'H1_Public information campaigns',
+                    'H2_Testing policy', 'H3_Contact tracing', 'Date',
+                    'Day Count', 'Days Elapsed Since First Case',
+                    'Confirmed Cases', 'Deaths', 'Recovered',
+                    'Daily New Cases', 'Daily Deaths', 'log_cases']
     non_scalable_vars = df[non_scalable]
     lst = []
     for column in df.columns:
@@ -343,7 +357,7 @@ def divide_target_and_features(df, target):
     '''
     y = df[target]
     outcome_vars = ['Confirmed Cases', 'Deaths', 'Recovered',
-                    'Daily New Cases', 'Daily Deaths']
+                    'Daily New Cases', 'Daily Deaths', 'log_cases']
     x = df.drop(outcome_vars, axis=1)
     return x, y
 
@@ -422,8 +436,10 @@ def train_and_evaluate_w_grid(x_train, y_train, x_test, y_test):
     None.
 
     '''
-    ls = GridSearchCV(linear_model.Lasso(), {'alpha':[0.1,0.2,0.3,0.4,0.5]})
-    rg = GridSearchCV(linear_model.Ridge(), {'alpha':[0.1,0.2,0.3,0.4,0.5]})
+    ls = GridSearchCV(linear_model.Lasso(), {'alpha': [0.1, 0.2, 0.3, 0.4,
+                                                       0.5]})
+    rg = GridSearchCV(linear_model.Ridge(), {'alpha': [0.1, 0.2, 0.3, 0.4,
+                                                       0.5]})
     ev = {}
     models = [(ls, 'Lasso'),
               (rg, 'Ridge')]
@@ -431,19 +447,13 @@ def train_and_evaluate_w_grid(x_train, y_train, x_test, y_test):
     for m in models:
         (model, name) = m
         model.fit(x_train, y_train)
-        #y_pred = model.predict(x_test)
-        # print('{}\n{}\n'.format(name + ': Features with highest magnitude\
-        #                         coefficients in absolute value',
-        #                         get_most_relevant_features(x_train,
-        #                                                    model, 10)))
         ev[name] = model.cv_results_
-        #ev[name] = metrics(y_pred, y_test, x_train, y_train, model)
         print(ev[name])
 
     return ev
 
 
-def  plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
+def plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
     '''
 
 
@@ -464,13 +474,13 @@ def  plot_real_vs_prediction(X_test, y_pred, y_test, country_name):
 
     '''
     country = 'Country_' + country_name
-    x = X_test['Day Count'][X_test[country] == 1].apply(lambda x: timedelta(x)
-                                                        + datetime.date(2020, 1, 1))
+    x = X_test['Day Count'][X_test[country] == 1].apply(
+        lambda x: timedelta(x) + datetime.date(2020, 1, 1))
 
-    plt.plot(x , y_pred[X_test[country] == 1],\
-             marker='o', markerfacecolor='blue', markersize=12, color='skyblue', linewidth=4, label='Real')
-    plt.plot(x, y_test[X_test[country] == 1],\
-             marker='', color='olive', linewidth=2, label='Prediction')
+    plt.plot(x, y_pred[X_test[country] == 1], marker='o', markerfacecolor=
+             'blue', markersize=12, color='skyblue', linewidth=4, label='Real')
+    plt.plot(x, y_test[X_test[country] == 1], marker='', color='olive',
+             linewidth=2, label='Prediction')
     plt.legend()
 
 
@@ -497,18 +507,20 @@ def predictions_every_country(country_list, X_test, y_pred, y_test):
     '''
     df = pd.DataFrame()
     df_final = pd.DataFrame()
-    dates = X_test['Day Count'][X_test['Country_United States of America'] == 1].\
-        apply(lambda x: timedelta(x) + datetime.date(2020, 1, 1))
+    dates = X_test['Day Count'][X_test['Country_United States of America']
+                                == 1].apply(lambda x: timedelta(x) +
+                                            datetime.date(2020, 1, 1))
     df['date'] = dates
     df = df.set_index('date')
 
     for country_var in country_list:
         dates = X_test['Day Count'][X_test[country_var] == 1].\
-        apply(lambda x: timedelta(x) + datetime.date(2020, 1, 1))
+                apply(lambda x: timedelta(x) + datetime.date(2020, 1, 1))
         df_aux = pd.DataFrame()
         df_aux['date'] = dates
         df_aux[country_var[8:] + ' real'] = y_test[X_test[country_var] == 1]
-        df_aux[country_var[8:] + ' prediction'] = y_pred[X_test[country_var] == 1]
+        df_aux[country_var[8:] + ' prediction'] = y_pred[X_test[country_var]
+                                                         == 1]
         df_aux = df_aux.set_index('date')
         df_final = df_final.join(df_aux.copy(), how='outer')
 
@@ -521,45 +533,22 @@ def predictions_every_country(country_list, X_test, y_pred, y_test):
 ###
 ###
 
-countries_names = {'Czech republic': 'Czech Republic', 'Czechia':
-    'Czech Republic', 'Myanmar': 'Burma', 'West Bank and Gaza': 'Palestine',
-    'Brunei Darussalam': 'Brunei', 'Korea Republic of' : 'South Korea',
-    'Korea, Rep.' : 'South Korea', 'Korea, South' : 'South Korea',
-    'Cote d\'Ivoire': 'Côte d\'Ivoire', 'North Macedonia Republic Of':
-    'North Macedonia', 'Congo': 'Congo (Brazzaville)', 'Congo DR':
-    'Congo (Kinshasa)', 'Congo, Dem. Rep.':'Congo (Kinshasa)', "Congo, Rep.":
-    'Congo (Brazzaville)',  'Russian Federation': 'Russia', 'Egypt, Arab Rep.':
-    'Egypt', 'Micronesia, Fed. Sts.':'Micronesia','Moldova Republic of':
-    'Moldova', 'Moldova Republic Of': 'Moldova', 'Lao PDR': 'Laos', 'Viet Nam':
-    'Vietnam', 'US': 'United States of America', "Bahamas, The": "Bahamas",
-    "Gambia, The" : "Gambia", 'Iran, Islamic Rep.': "Iran", "Kyrgyzstan":
-    "Kyrgyz Republic", 'St. Lucia' : "Saint Lucia", "Slovakia" :
-    "Slovak Republic", 'Syrian Arab Republic' : "Syria", 'United States':
-    'United States of America', 'St. Vincent and the Grenadines':
-    'Saint Vincent and the Grenadines', 'Venezuela, RB': 'Venezuela',
-    'Yemen, Rep.' : 'Yemen'}
-
-data_dir = "../data/"
-jhu_data_url = "https://raw.githubusercontent.com/datasets/covid-19/master/data\
-/time-series-19-covid-combined.csv"
-jhu_data_offline = data_dir + "time-series-19-covid-combined.csv"
-acaps_filepath = data_dir + 'acaps_data.xlsx'
-OXFORD_URL = "https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest.csv"
-
-
-def read_jhu_data(url):
+def read_jhu_data():
     '''
     Reads John Hopkins cross country data, converts dates to datetime and
     returns a pandas dataframe
     '''
+    jhu_data_url = "https://raw.githubusercontent.com/datasets/covid-19/master\
+                    /data/time-series-19-covid-combined.csv"
     try:
         jhu_df = pd.read_csv(jhu_data_url)
-    except:
+    except Exception:
         jhu_df = pd.read_csv(jhu_data_offline)
     jhu_df['Date'] = pd.to_datetime(jhu_df['Date'], infer_datetime_format=True)
     jhu_df['Date'] = jhu_df['Date'].dt.date
     jhu_df.rename(columns={'Country/Region': 'Country'}, inplace=True)
     return jhu_df
+
 
 def get_first_case(jhu_df):
     '''
@@ -568,7 +557,7 @@ def get_first_case(jhu_df):
     '''
     sub = jhu_df[jhu_df['Confirmed'] > 0.0]
     first_case = sub.groupby('Country')['Date'].min().reset_index().\
-    sort_values(by=['Country'])
+                 sort_values(by=['Country'])
     return first_case
 
 
@@ -576,19 +565,18 @@ def read_acaps_data(file_path):
     '''
     Reads acaps data, changes dates to datetime, implements some data cleaning
     '''
-    acaps_df = pd.read_excel(file_path, index_col=0,\
+    acaps_df = pd.read_excel(file_path, index_col=0,
                              converters={'Date': str})
 
-    acaps_df['DATE_IMPLEMENTED'] = pd.to_datetime(acaps_df['DATE_IMPLEMENTED'],\
-            infer_datetime_format=True)
+    acaps_df['DATE_IMPLEMENTED'] = pd.to_datetime(acaps_df['DATE_IMPLEMENTED'],
+                                                  infer_datetime_format=True)
     acaps_df['DATE_IMPLEMENTED'] = acaps_df['DATE_IMPLEMENTED'].dt.date
     acaps_df.rename(columns={'COUNTRY': 'Country'}, inplace=True)
 
-    #inaccurate date of decl of emergency in US, removing
-    acaps_df = acaps_df.drop([acaps_df.index[4292] , acaps_df.index[4298]])
-    #this should be done differently
+    acaps_df = acaps_df.drop([acaps_df.index[4292], acaps_df.index[4298]])
 
     return acaps_df
+
 
 def read_and_clean_oxford_data():
     '''
@@ -656,7 +644,6 @@ def read_wb_data(data_dir):
     wb_data.rename(columns={'2019': 'Hospital Beds/1k', 'Country Name':\
                             'Country', '2018': 'Share Pop 65+'}, inplace=True)
     return wb_data
-#%%
 
 def main():
     df1 = read_jhu_data(jhu_data_url)
@@ -665,20 +652,6 @@ def main():
     df_wb = read_wb_data(data_dir)
     merged_df = pd.merge(merged_df, df_wb, how='inner', on='Country')
     return merged_df
-
-
-## Country Names are not consistent  in any dataset
-## World Bank Provides country codes so using it to make consistent
-
-renaming_jhu_names = {'Bahamas': 'The Bahamas',
-                        'Burma': 'Myanmar',
-                        'Congo (Brazzaville)' : 'Congo',
-                        'Congo (Kinshasa)':'Dem. Rep. Congo',
-                         'Gambia': 'The Gambia',
-                         'Korea, South':'Korea',
-                         'North Macedonia':'Macedonia',
-                         'Syria':'Syrian Arab Republic',
-                         'US':'United States'}
 
 def jhu_with_country_code():
     '''
