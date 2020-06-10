@@ -8,6 +8,7 @@ The objective is to model the cases of COVID-19 and related deaths at the countr
 Breakdown of files:
 
 data: contains cleaned datasets 
+  
   -WB data: contains World Bank source data
   
 predictions
