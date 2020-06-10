@@ -1,20 +1,18 @@
-# ml-project
-
-Using Machine Learning to Predict Covid-19 Cases
-CAPP 30254
+# Using Machine Learning to Predict Covid-19 Cases and Deaths
+### CAPP 30254
 
 The objective is to model the cases of COVID-19 and related deaths at the country level. Data from John Hopkins University on cases and deaths, World Bank on country data, and Oxford University on policy measures are used to train the model.
 
-Breakdown of files:
+_Breakdown of files:_
 
-data: contains cleaned datasets 
+*data*: contains cleaned datasets 
   
-  -WB data: contains World Bank source data
+* WB data: contains World Bank source data
   
-predictions
+*predictions*
 
-scripts: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
+*scripts*: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
 
-trained_classifiers: contains pickle files of the various trained models
+*trained_classifiers*: contains pickle files of the various trained models
 
-visualizations: contains file output from various scripts 
+*visualizations*: contains file output from various scripts 
