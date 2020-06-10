@@ -15,24 +15,25 @@ from sklearn import linear_model
 from sklearn.metrics import r2_score
 from  sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
+import math
 
 
 def metrics(y_pred, y_test, x_train, y_train, model, output=True):
 
     bias = mean_squared_error(y_train, model.predict(x_train))
-    mse = mean_squared_error(y_test, y_pred)
+    rmse = math.sqrt(mean_squared_error(y_test, y_pred))
     rss = np.sum((y_pred - y_test) ** 2)
     variance = model.score(x_train, y_train)
     r2_s = r2_score(y_test, y_pred)
 
     if output:
         print("Bias: %.2f" % bias)
-        print("Mean squared error: %.2f" % mse)
+        print("Root Mean squared error: %.2f" % rmse)
         print("RSS: %.2f" % rss)
         print('Variance score: %.2f\n' % variance)
         print('R2 score: %.2f\n' % r2_s)
 
-    return(bias, mse, rss, variance, r2_s)
+    return(bias, rmse, rss, variance, r2_s)
 
 
 def get_most_relevant_features(df, model, number_of_features):
@@ -69,7 +70,7 @@ def get_most_relevant_features(df, model, number_of_features):
     indices = np.argsort(features['Coefficient'])[::-1]
     names = [labels[i] for i in indices]
     colors = ['r' if coef <0 else 'royalblue' for coef in feats[:5]]
-    plt.figure() 
+    plt.figure()
     print(features)
     plt.bar(labels[:5], abs(feats[:5]), color=colors)
     plt.xticks(labels[:5], names[:5], rotation=90)
