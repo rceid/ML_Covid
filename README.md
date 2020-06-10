@@ -1,4 +1,4 @@
-# Using Machine Learning to Predict Covid-19 Cases
+# Using Machine Learning to Predict Covid-19 Cases and Deaths
 ### CAPP 30254
 
 The objective is to model the cases of COVID-19 and related deaths at the country level. Data from John Hopkins University on cases and deaths, World Bank on country data, and Oxford University on policy measures are used to train the model.
