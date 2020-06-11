@@ -427,7 +427,7 @@ def train_and_evaluate(x_train, y_train, x_test, y_test):
                                 coefficients in absolute value',
                                 get_most_relevant_features(x_train,
                                                            model, 10)))
-        ev[name] = metrics(y_pred, y_test, x_train, y_train, model)
+        ev[name] = metrics(np.exp(y_pred), np.exp(y_test), x_train, np.exp(y_train), model)
 
     return ev
 
