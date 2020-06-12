@@ -3,16 +3,24 @@
 
 The objective is to model the cases of COVID-19 and related deaths at the country level. Data from John Hopkins University on cases and deaths, World Bank on country data, and Oxford University on policy measures are used to train the model.
 
-_Breakdown of files:_
+_Breakdown of folders:_
 
 *data*: contains cleaned datasets 
   
-* WB data: contains World Bank source data
+*WB data*: contains World Bank source data
   
-*predictions*
+*predictions* : python pickle files of predicted data
 
 *scripts*: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
 
 *trained_classifiers*: contains pickle files of the various trained models
 
 *visualizations*: contains file output from various scripts 
+
+_Instrucctions to run the code:_  
+
+Please  run the jupyter noteboooks in the following order:  
+
+1. 
+2. 
+3. 
