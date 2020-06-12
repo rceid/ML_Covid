@@ -7,7 +7,7 @@ _Breakdown of folders:_
 
 #### *data*: contains cleaned datasets 
   
-##### &emsp;  *data:*WB data*: contains World Bank source data
+#### &emsp;  *data:*WB data*: contains World Bank source data
   
 #### *predictions* : python pickle files of predicted data
 
@@ -17,7 +17,8 @@ _Breakdown of folders:_
 
 #### *visualizations*: contains file output from various scripts 
 
-_Instrucctions to run the code:_  
+
+_Instructions to run the code:_  
 
 Please  run the jupyter noteboooks in the following order:  
 
