@@ -7,9 +7,9 @@ _Breakdown of folders:_
 
 #### *data*: contains cleaned datasets 
   
-#### &emsp;  *data:WB data*: contains World Bank source data
+#### &emsp;  *data: WB data*: contains World Bank source data
   
-#### *predictions* : python pickle files of predicted data
+#### *predictions*: python pickle files of predicted data
 
 #### *scripts*: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
 
