@@ -5,17 +5,17 @@ The objective is to model the cases of COVID-19 and related deaths at the countr
 
 _Breakdown of folders:_
 
-*data*: contains cleaned datasets 
+#### *data*: contains cleaned datasets 
   
-*WB data*: contains World Bank source data
+##### *data:*WB data*: contains World Bank source data
   
-*predictions* : python pickle files of predicted data
+#### *predictions* : python pickle files of predicted data
 
-*scripts*: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
+#### *scripts*: contains scripts that clean and prepare the data, train models, output predictions, visualize predictions
 
-*trained_classifiers*: contains pickle files of the various trained models
+#### *trained_classifiers*: contains pickle files of the various trained models
 
-*visualizations*: contains file output from various scripts 
+#### *visualizations*: contains file output from various scripts 
 
 _Instrucctions to run the code:_  
 
