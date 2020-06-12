@@ -7,7 +7,7 @@ _Breakdown of folders:_
 
 #### *data*: contains cleaned datasets 
   
-##### *data:*WB data*: contains World Bank source data
+\t ##### *data:*WB data*: contains World Bank source data
   
 #### *predictions* : python pickle files of predicted data
 
