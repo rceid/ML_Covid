@@ -19,6 +19,29 @@ import math
 
 
 def metrics(y_pred, y_test, x_train, y_train, model, output=True):
+    '''
+    Returns and prints 5 classic metrics for a machine learning model
+
+    Parameters
+    ----------
+    y_pred : TYPE
+        DESCRIPTION.
+    y_test : TYPE
+        DESCRIPTION.
+    x_train : TYPE
+        DESCRIPTION.
+    y_train : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    output : TYPE, optional
+        DESCRIPTION. The default is True.
+
+    Returns
+    -------
+    floats.
+
+    '''
 
     bias = mean_squared_error(y_train, model.predict(x_train))
     rmse = math.sqrt(mean_squared_error(y_test, y_pred))
@@ -38,8 +61,7 @@ def metrics(y_pred, y_test, x_train, y_train, model, output=True):
 
 def get_most_relevant_features(df, model, number_of_features):
     '''
-
-
+    Returns a sorted dataframe of the most relevant features.
     Parameters
     ----------
     df : TYPE
@@ -80,7 +102,7 @@ def get_most_relevant_features(df, model, number_of_features):
 
 def read_and_process_data(filepath):
     '''
-
+    Reads data from a filepath, processes it, and splits in train and test sets
 
     Returns
     -------
@@ -538,28 +560,6 @@ def predictions_every_country(country_list, X_test, y_pred, y_test):
 
     return df_final
 
-#%%
-###
-###
-### READING AND MERGING FUNCTIONS
-###
-###
-
-def read_jhu_data():
-    '''
-    Reads John Hopkins cross country data, converts dates to datetime and
-    returns a pandas dataframe
-    '''
-    jhu_data_url = "https://raw.githubusercontent.com/datasets/covid-19/master\
-                    /data/time-series-19-covid-combined.csv"
-    try:
-        jhu_df = pd.read_csv(jhu_data_url)
-    except Exception:
-        jhu_df = pd.read_csv(jhu_data_offline)
-    jhu_df['Date'] = pd.to_datetime(jhu_df['Date'], infer_datetime_format=True)
-    jhu_df['Date'] = jhu_df['Date'].dt.date
-    jhu_df.rename(columns={'Country/Region': 'Country'}, inplace=True)
-    return jhu_df
 
 
 def get_first_case(jhu_df):
@@ -571,23 +571,6 @@ def get_first_case(jhu_df):
     first_case = sub.groupby('Country')['Date'].min().reset_index().\
                  sort_values(by=['Country'])
     return first_case
-
-
-def read_acaps_data(file_path):
-    '''
-    Reads acaps data, changes dates to datetime, implements some data cleaning
-    '''
-    acaps_df = pd.read_excel(file_path, index_col=0,
-                             converters={'Date': str})
-
-    acaps_df['DATE_IMPLEMENTED'] = pd.to_datetime(acaps_df['DATE_IMPLEMENTED'],
-                                                  infer_datetime_format=True)
-    acaps_df['DATE_IMPLEMENTED'] = acaps_df['DATE_IMPLEMENTED'].dt.date
-    acaps_df.rename(columns={'COUNTRY': 'Country'}, inplace=True)
-
-    acaps_df = acaps_df.drop([acaps_df.index[4292], acaps_df.index[4298]])
-
-    return acaps_df
 
 
 def read_and_clean_oxford_data():
@@ -617,31 +600,6 @@ def read_and_clean_oxford_data():
     oxford_policy['Country'] = oxford_policy['Country'].replace(countries_names)
     return oxford_policy
 
-def merge_oxford_jhu(oxford_df, jhu_df):
-    return pd.merge(oxford_df, jhu_df, on=['Country', 'Date'], how='left')
-
-def merge_dfs_jhu_acap(df1, df2):
-    '''
-    Merges John Hopkins df with acaps, obtaining dummies for some policies first
-    '''
-    df1['Country'] = df1['Country'].replace(countries_names)
-    first_case = get_first_case(df1)
-    #next command gets the number of policies from acaps dataset
-    policies = df2.groupby('Country').size().reset_index(name='n_policies')
-    df_merged = pd.merge(policies, first_case, on='Country', how='outer')
-    subset_curfews = df2[df2.MEASURE == "Curfews"]
-    curfew = subset_curfews.groupby('Country').size().reset_index(name='count')
-    df_merged['Curfew'] = np.where(df_merged['Country'].isin(curfew['Country'])\
-             , 1, 0)
-
-    emergency_countries = df2[df2.MEASURE == "State of emergency declared"]
-    emergency_date = emergency_countries.groupby('Country')['DATE_IMPLEMENTED']\
-    .min().reset_index()
-    df_merged = pd.merge(df_merged, emergency_date, on='Country', how='left')
-    df_merged.rename(columns={"DATE_IMPLEMENTED": "Emergency Date", 'Date':\
-                              'First Case'}, inplace=True)
-    return df_merged
-
 def read_wb_data(data_dir):
     '''
     Reads and returns world bank data
@@ -657,61 +615,11 @@ def read_wb_data(data_dir):
                             'Country', '2018': 'Share Pop 65+'}, inplace=True)
     return wb_data
 
-def main():
-    df1 = read_jhu_data(jhu_data_url)
-    df2 = read_acaps_data(acaps_filepath)
-    merged_df = merge_dfs_jhu_acap(df1, df2)
-    df_wb = read_wb_data(data_dir)
-    merged_df = pd.merge(merged_df, df_wb, how='inner', on='Country')
-    return merged_df
 
-def jhu_with_country_code():
+def side_by_side(full_df, country, target, models, *predictions,
+                 save_output=False):
     '''
-    This function will take the JHU df and will add country codes as per WB
-    '''
-
-    df = read_jhu_data(jhu_data_url)
-    df['Country'] = df['Country'].replace(renaming_jhu_names)
-    wb_codes = pd.read_csv("../data/WB_Country_Codes.csv")[['Country Code', 'Short Name']]
-    wb_codes.rename(columns = {'Short Name':'Country'}, inplace = True)
-    result = pd.merge(df, wb_codes, on='Country', how='inner')
-    # only a few small countries do not match with World Bank list, it's best to drop them
-    # at this stage
-    return result
-
-def create_clean_df():
-    df1 = jhu_with_country_code()
-    #making df1 at country-date level
-    df1 = df1.groupby(['Country','Country Code', 'Date']).agg({'Recovered':'sum',
-                                                            'Confirmed': 'sum',
-                                                            'Deaths':'sum'}).reset_index()
-    df2 = read_acaps_data(acaps_filepath)
-    df2.rename(columns = {'ISO':'Country Code','DATE_IMPLEMENTED': 'Date'}, inplace=True)
-    ## Makidn acaps data also at a day level
-    ## <<FIX MEEEEEEEEEEEWEEEEEEEEE>>
-    # this needs a bit more thinking
-    df2 = df2.drop_duplicates(['Country Code', 'Date'])
-
-    m_df = pd.merge(df1, df2, how='left', left_on=['Country Code','Date'], right_on = ['Country Code', 'Date'])
-    df_wb = read_wb_data(data_dir)
-    m_df = pd.merge(m_df, df_wb, on = ['Country Code'])
-
-    ## some cleaning on the m_df
-    m_df.drop(columns =['Country_x', 'Country_y'], inplace=True)
-    m_df['acaps_measure'] = pd.notnull(m_df['CATEGORY']).astype(int)
-
-    #adding dummies for acaps 'CATEGORY' var
-    m_df = m_df.join(pd.get_dummies(m_df['CATEGORY'], prefix= "acaps_cat_"))
-
-    ## making days since first case
-    first_case = m_df[m_df['Confirmed'] > 0.0].groupby('Country').agg({'Confirmed': 'cumcount'})
-    first_case.rename(columns = {'Confirmed': 'days_since_first_case'}, inplace=True)
-    m_df = m_df.join(first_case)
-    return m_df
-
-def side_by_side(full_df, country, target, models, *predictions, save_output=False):
-    '''
-    Plots two different plots of models' predictions vs real trends side by side. 
+    Plots two different plots of models' predictions vs real trends side by side.
     --first *predictions arg must be the one to be logged (LinReg)
     Inputs:
         full_df: (Pandas df) The full cleaned dataset
@@ -727,14 +635,15 @@ def side_by_side(full_df, country, target, models, *predictions, save_output=Fal
     np.seterr(all='ignore')
     style.use('seaborn')
     date = predictions[0].index.min()
-    pre = full_df[(full_df['Country'] == country) & (full_df['Date'] <= date)][[target, 'Date']]
+    pre = full_df[(full_df['Country'] == country) & (full_df['Date']
+                                                     <= date)][[target, 'Date']]
     real, predict = (country + ' real', country + ' prediction')
     day = pre['Date'].max() + dt.timedelta(days=-1)
     fig, axes = plt.subplots(1, 2, figsize=(20,5))
     title = ' Prediction: {} in {}'.format(target, country)
     post_trends = []
     y_max = 0
-    
+
     for pred, model in zip(predictions, models):
         post = pred[[real, predict]]
         row = pre[pre['Date'] == day][[target, 'Date']]
@@ -744,7 +653,7 @@ def side_by_side(full_df, country, target, models, *predictions, save_output=Fal
             row[real], row[predict] = (np.log(val), np.log(val))
             post = np.exp(row.append(post[[real, predict]]))
         else:
-            row[real], row[predict] = (val, val) 
+            row[real], row[predict] = (val, val)
             post = row.append(post[[real, predict]])
         post_trends.append(post)
     iterable = zip(models, predictions, axes, post_trends)
@@ -756,7 +665,7 @@ def side_by_side(full_df, country, target, models, *predictions, save_output=Fal
         g = sns.lineplot(x=trend.index, y=trend[predict], ax=axis, marker='X', color='g')
         g = sns.lineplot(x=pre['Date'], y=pre[target], ax=axis, color='royalblue')
         axis.legend(('Prediction frontier\n {}'.format(date), 'Real', 'Predicted', 'Trend'), prop={'size': 12})
-        plt.ylabel(target)    
+        plt.ylabel(target)
         if output[[real, predict]].dropna().values.max() > y_max:
             y_max = output[[real, predict]].dropna().values.max()
     plt.ylim(0, y_max + y_max*.15)
@@ -776,7 +685,7 @@ def predicted_vs_real(full_df, output_df, country, target, logged=False, net=Fal
     pre = full_df[(full_df['Country'] == country) & (full_df['Date'] <= date)][[target, 'Date']]
     real = country + ' real'
     predict = country + ' prediction'
-    post = output_df[[real, predict]]  
+    post = output_df[[real, predict]]
     day = pre['Date'].max() + dt.timedelta(days=-1)
     row = pre[pre['Date'] == day][[target, 'Date']]
     val = row[target]
@@ -788,7 +697,7 @@ def predicted_vs_real(full_df, output_df, country, target, logged=False, net=Fal
     post = row.append(post[[real, predict]])
     if logged:
         post = np.exp(post)
-        
+
     fig, ax = plt.subplots(figsize=(12, 8))
     title = 'Prediction: {} in {}'.format(target, country)
     if net:
