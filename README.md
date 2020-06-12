@@ -22,6 +22,7 @@ _Instructions to run the code:_
 
 Please  run the jupyter noteboooks in the following order:  
 
-1. 
-2. 
-3. 
+1. covid_dataset.ipynb
+2. model_fitting.ipynb
+3. MLP Classifier.ipynb
+4. Model_output.ipynb
