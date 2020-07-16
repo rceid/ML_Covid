@@ -13,7 +13,7 @@ import datetime
 from datetime import timedelta
 from sklearn import linear_model
 from sklearn.metrics import r2_score
-from  sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV
 import matplotlib.pyplot as plt
 import math
 
